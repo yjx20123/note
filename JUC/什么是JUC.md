@@ -1,4 +1,10 @@
-##### 1：什么是JUC
+####  1：什么是JUC
+
+🤑
+
+---
+
+ JUC就是java.util.concurrent下面的类包，专门用于多线程的开发。
 
 ##### 2:线程和进程
 
@@ -1341,5 +1347,599 @@ public static ExecutorService newCachedThreadPool() {
                                       60L, TimeUnit.SECONDS,
                                       new SynchronousQueue<Runnable>());
     }
+本质：
+    public ThreadPoolExecutor(int corePoolSize,//核心线程池大小
+                              int maximumPoolSize,//最大核心线程池大小
+                              long keepAliveTime,//超时了没有人调用就会释放
+                              TimeUnit unit,//超时单位
+                              BlockingQueue<Runnable> workQueue,//阻塞队列
+                              ThreadFactory threadFactory,//线程工厂，创建线程的，一般不用动
+                              RejectedExecutionHandler handler//拒绝策略) {
+        if (corePoolSize < 0 ||
+            maximumPoolSize <= 0 ||
+            maximumPoolSize < corePoolSize ||
+            keepAliveTime < 0)
+            throw new IllegalArgumentException();
+        if (workQueue == null || threadFactory == null || handler == null)
+            throw new NullPointerException();
+        this.acc = System.getSecurityManager() == null ?
+                null :
+                AccessController.getContext();
+        this.corePoolSize = corePoolSize;
+        this.maximumPoolSize = maximumPoolSize;
+        this.workQueue = workQueue;
+        this.keepAliveTime = unit.toNanos(keepAliveTime);
+        this.threadFactory = threadFactory;
+        this.handler = handler;
+    }
 ```
+
+![image-20211101152946132](C:\Users\18352\AppData\Roaming\Typora\typora-user-images\image-20211101152946132.png)
+
+![image-20211101152955231](C:\Users\18352\AppData\Roaming\Typora\typora-user-images\image-20211101152955231.png)
+
+> 手动创建线程池
+
+```java
+package pool;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+//Executors 工具类 3大方法
+//使用线程池之后，使用线程池来创建线程
+public class Demo {
+    public static void main(String[] args) {
+//        ExecutorService threadPool = Executors.newSingleThreadExecutor();//单个线程
+//        ExecutorService threadPool = Executors.newFixedThreadPool(5);//创建一个固定的线程池的大小
+        ExecutorService threadPool = Executors.newCachedThreadPool();
+        try {
+
+            for (int i = 0; i < 10; i++) {
+                threadPool.execute(() -> {
+                    System.out.println(Thread.currentThread().getName() + "ok");
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            threadPool.shutdown();
+        }
+    }
+}
+
+```
+
+> 四种拒绝策略
+
+```java 
+package pool;
+
+import java.util.concurrent.*;
+//new ThreadPoolExecutor.AbortPolicy()//人满了，还有人进来，不处理这个人的，抛出异常
+//new ThreadPoolExecutor.CallerRunsPolicy());//哪来的去哪里
+//new ThreadPoolExecutor.DiscardPolicy());//队列满了，丢掉任务，不会抛出异常
+//new ThreadPoolExecutor.DiscardOldestPolicy());//队列满了，尝试去和最早的竞争，也不会抛出异常
+public class Demo2 {
+    public static void main(String[] args) {
+        ExecutorService threadPool = new ThreadPoolExecutor(2,
+                5,
+                3,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(3),
+                Executors.defaultThreadFactory(),
+                new ThreadPoolExecutor.DiscardOldestPolicy());//队列满了，尝试去和最早的竞争，也不会抛出异常
+
+        try {
+            //
+            for (int i = 0; i < 9; i++) {
+                threadPool.execute(()->{
+                    System.out.println(Thread.currentThread().getName()+"----OK");
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            threadPool.shutdown();
+        }
+    }
+}
+
+```
+
+```java
+//new ThreadPoolExecutor.AbortPolicy()//人满了，还有人进来，不处理这个人的，抛出异常
+//new ThreadPoolExecutor.CallerRunsPolicy());//哪来的去哪里
+//new ThreadPoolExecutor.DiscardPolicy());//队列满了，丢掉任务，不会抛出异常
+//new ThreadPoolExecutor.DiscardOldestPolicy());//队列满了，尝试去和最早的竞争，也不会抛出异常
+```
+
+> 小结和扩展
+
+```java
+/**
+ * 最大线程到底该如何定义
+ * 1、cpu密集型 几核，就是几，可以保持cpu的效率最高
+ * 2、io 密集型 判断你程序中十分耗IO的线程
+ * 程序 15个大型任务，IO十分占用资源
+ */
+```
+
+##### **12、函数式接口（必须掌握）**
+
+---
+
+新时代的程序员：lambda表达式，链式编程，函数式接口，Stream流式接口
+
+> 函数式接口：只有一个方法
+
+```java
+@FunctionalInterface
+public interface Runnable {
+    public abstract void run();
+}
+```
+
+![image-20211102093953556](C:\Users\18352\AppData\Roaming\Typora\typora-user-images\image-20211102093953556.png)
+
+**代码测试：**
+
+```java
+package function;
+
+import java.util.function.Function;
+
+/**
+ * Function 函数型接口，有一个输入参数，有一个输出
+ * 只要是函数型接口可以用lambda表达式简化
+ */
+public class Demo {
+    public static void main(String[] args) {
+//        Function function = new Function<String,String>() {
+//            @Override
+//            public String apply(String o) {
+//                return null;
+//            }
+//        };
+        Function function=(str)->{return str;};
+        System.out.println(function.apply("ads"));
+    }
+}
+
+```
+
+```java
+
+package function;
+
+import java.util.function.Predicate;
+
+public class Demo2 {
+    public static void main(String[] args) {
+        //判断字符串是否为空
+        Predicate<String> predicate = new Predicate<String>() {
+            @Override
+            public boolean test(String s) {
+                return s.isEmpty();
+            }
+        };
+        Predicate<String> predicate1=(str)->{return str.isEmpty();};
+        System.out.println(predicate1.test(""));
+    }
+}
+
+```
+
+> Consumer 消费型接口
+
+```
+package function;
+
+import java.util.function.Consumer;
+
+public class Demo3 {
+    public static void main(String[] args) {
+        /**
+         * Consumer 消费型接口： 只有输入，没有返回值
+         *
+         */
+        Consumer<String> consumer = new Consumer<String>() {
+            @Override
+            public void accept(String o) {
+                System.out.println(o);
+            }
+        };
+        Consumer<String> consumer1=(str)->{System.out.println(str);};
+        consumer.accept("adfsf");
+        consumer1.accept("sfdsfsd");
+    }
+}
+```
+
+> Supplier 供给型接口
+
+```java
+package function;
+
+import java.util.function.Supplier;
+
+public class Demo4 {
+    /**
+     * Supplier 没有参数，只有返回值
+     */
+    public static void main(String[] args) {
+//        Supplier<Integer> supplier = new Supplier<Integer>() {
+//
+//            @Override
+//            public Integer get() {
+//                System.out.println("get()");
+//                return 1024;
+//            }
+//        };
+        Supplier supplier1=()->{ return 1024; };
+        System.out.println(supplier1.get());
+    }
+}
+
+```
+
+##### 13、Stream流式计算
+
+> 什么是Stream流式计算
+
+```java
+package Stream;
+
+import java.util.Arrays;
+import java.util.List;
+
+public class Test {
+    public static void main(String[] args) {
+        User u1 = new User(1, "a", 21);
+        User u2 = new User(2, "b", 22);
+        User u3 = new User(3, "c", 23);
+        User u4 = new User(4, "d", 24);
+        User u5 = new User(6, "e", 25);
+        //集合就是存储
+        List<User> users = Arrays.asList(u1, u2, u3, u4, u5);
+        //计算交给Stream流
+        //链式编程
+        users.stream()
+                .filter(u->{return u.getId()%2==0;}).
+                filter(u->{return u.getAge()>=23;}).
+                map((u)->{return u.getName().toUpperCase();}).
+
+                forEach(System.out::println);
+    }
+}
+
+```
+
+##### 14、ForkJoin
+
+> 什么是ForkJoin
+
+forkJoin在JDK1.7,并行执行任务，提高效率，大数据量
+
+![image-20211102104857362](C:\Users\18352\AppData\Roaming\Typora\typora-user-images\image-20211102104857362.png)
+
+> ForkJoin特点：工作窃取
+
+![image-20211102105111881](C:\Users\18352\AppData\Roaming\Typora\typora-user-images\image-20211102105111881.png)
+
+> ForkJoin
+
+```java
+package forkjoin;
+
+import java.util.concurrent.RecursiveTask;
+
+/**
+ * 求和计算任务 Stream并行流
+ */
+public class ForkjoinDemo extends RecursiveTask<Long> {
+    private Long start;
+    private Long end;
+    //灵界值
+    private Long temp = 10000L;
+
+    public ForkjoinDemo(Long start, Long end) {
+        this.start = start;
+        this.end = end;
+    }
+
+    //计算方法
+    @Override
+    protected Long compute() {
+        if ((end - start) > temp) {
+            Long sum = 0L;
+            for (Long i = start; i <= end; i++) {
+                sum += i;
+            }
+            return sum;
+        } else {
+            //forkjoin
+            long millde = (start - end) / 2;//中间值
+            ForkjoinDemo task1 = new ForkjoinDemo(start, millde);
+            task1.fork();//拆分任务，把任务压入线程队列
+            ForkjoinDemo task2 = new ForkjoinDemo(millde + 1, end);
+            task2.fork();//拆分任务，把任务压入线程队列
+            return task1.join() + task2.join();
+        }
+    }
+
+
+
+}
+测试
+    package forkjoin;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.stream.LongStream;
+
+public class Test {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        test1();
+        test2();
+    }
+    //普通程序员
+    public static void test1(){
+        Long sum=0L;
+        long start = System.currentTimeMillis();
+        for (Long i=1L;i<=10_0000_0000;i++){
+            sum+=i;
+        }
+        long end=System.currentTimeMillis();
+        System.out.println("普通程序员求和sum="+sum+"时间="+(end-start));
+    }
+    //会使用ForkJoin
+    public static  void test2() throws ExecutionException, InterruptedException {
+        long start=System.currentTimeMillis();
+        ForkJoinPool forkJoinPool = new ForkJoinPool();
+        ForkjoinDemo task = new ForkjoinDemo(0L,10_0000_0000L);
+        ForkJoinTask<Long> submit = forkJoinPool.submit(task);//提交任务
+        Long sum = submit.get();
+
+        long end= System.currentTimeMillis();
+        System.out.println("Forkjoinsum求和="+sum+"时间="+(end-start));
+    }
+    //使用stream并行流
+    public static void test3(){
+        long start=System.currentTimeMillis();
+        long sum = LongStream.rangeClosed(0L, 10_0000_0000L).parallel().reduce(0, Long::sum);
+        long end=System.currentTimeMillis();
+        System.out.println("Stream并行流求和sum求和="+sum+"时间="+(end-start));
+    }
+}
+
+```
+
+##### 15、异步回调
+
+> Future 设计的初衷
+
+```java
+package futrue;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 异步调用 CompletableFuture
+ * //异步执行
+ * 成功回调
+ * 失败回调
+ */
+public class Demo01 {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        //发起一个请求
+        //没有返回值的异步回调
+//        CompletableFuture<Void> completableFuture = CompletableFuture.runAsync(() -> {
+//            try {
+//                TimeUnit.SECONDS.sleep(2);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//            System.out.println(Thread.currentThread().getName() + "runAsync=>void");
+//        });
+//        System.out.println("11111");
+//        completableFuture.get();//获得阻塞执行结果
+        //有返回值的异步回调
+        CompletableFuture<Integer> completableFuture=CompletableFuture.supplyAsync(()->{
+            System.out.println(Thread.currentThread().getName()+"sdfsaf");
+            int i=10/0;
+            return 1024;
+        });
+        completableFuture.whenComplete((t,u)->{
+            System.out.println(t);//正常的返回结果
+            System.out.println(u);//错误信息
+        }).exceptionally((e)->{
+            System.out.println(e.getMessage());
+            return 233;//可以获取到错误的返回结果
+            /**
+             * succee Code 200
+             * unsuccee 404
+             */
+        });
+    }
+}
+
+```
+
+##### 16:JMM
+
+> 请你谈谈你对Volaatile的理解
+
+Volatile是Java虚拟机提供**轻量级的同步机制**
+
+1、保证可见性
+
+<p style="color:red">2、不保证原子性</p>
+
+3、禁止网络重排
+
+> 什么是JMM
+
+JMM ：Java内存模型，不存在的东西，概念！约定！
+
+**关于JMM的一些同步的约定：**
+
+1：线程解锁前，必须把共享变量**立刻**刷回主存
+
+2、线程加锁前，必须读取主存中最新值到工作内存中
+
+3、 加锁和解锁都是一把锁
+
+
+
+线程**工作内存**、**主内存**
+
+八种操作：
+
+![image-20211102143712189](C:\Users\18352\AppData\Roaming\Typora\typora-user-images\image-20211102143712189.png)
+
+![image-20211102144711895](C:\Users\18352\AppData\Roaming\Typora\typora-user-images\image-20211102144711895.png)
+
+**内存交互操作有8种**
+
+- - lock   （锁定）：作用于主内存的变量，把一个变量标识为线程独占状态
+  - unlock （解锁）：作用于主内存的变量，它把一个处于锁定状态的变量释放出来，释放后的变量才可以被其他线程锁定
+  - read  （读取）：作用于主内存变量，它把一个变量的值从主内存传输到线程的工作内存中，以便随后的load动作使用
+  - load   （载入）：作用于工作内存的变量，它把read操作从主存中变量放入工作内存中
+  - use   （使用）：作用于工作内存中的变量，它把工作内存中的变量传输给执行引擎，每当虚拟机遇到一个需要使用到变量的值，就会使用到这个指令
+  - assign （赋值）：作用于工作内存中的变量，它把一个从执行引擎中接受到的值放入工作内存的变量副本中
+  - store  （存储）：作用于主内存中的变量，它把一个从工作内存中一个变量的值传送到主内存中，以便后续的write使用
+  - write 　（写入）：作用于主内存中的变量，它把store操作从工作内存中得到的变量的值放入主内存的变量中
+
+　　**JMM对这八种指令的使用，制定了如下规则：**
+
+- - 不允许read和load、store和write操作之一单独出现。即使用了read必须load，使用了store必须write
+  - 不允许线程丢弃他最近的assign操作，即工作变量的数据改变了之后，必须告知主存
+  - 不允许一个线程将没有assign的数据从工作内存同步回主内存
+  - 一个新的变量必须在主内存中诞生，不允许工作内存直接使用一个未被初始化的变量。就是怼变量实施use、store操作之前，必须经过assign和load操作
+  - 一个变量同一时间只有一个线程能对其进行lock。多次lock后，必须执行相同次数的unlock才能解锁
+  - 如果对一个变量进行lock操作，会清空所有工作内存中此变量的值，在执行引擎使用这个变量前，必须重新load或assign操作初始化变量的值
+  - 如果一个变量没有被lock，就不能对其进行unlock操作。也不能unlock一个被其他线程锁住的变量
+  - 对一个变量进行unlock操作之前，必须把此变量同步回主内存
+
+问题：程序不知道主内存的值已被修改了
+
+##### 17、Volatile
+
+> 保证程序可见性
+
+```java
+package valatile;
+
+import java.util.concurrent.TimeUnit;
+
+public class JMMDemo {
+    //不加volatile 程序就会死循环
+    //加volatile 可以保证可见性
+    private volatile static int num=0;
+
+    public static void main(String[] args) {
+        new Thread(()->{
+            while (num == 0) {
+
+            }
+        }).start();
+        try {
+            TimeUnit.SECONDS.sleep(2);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        num=1;
+        System.out.println(num);
+    }
+}
+
+```
+
+> 2、不保证原子性
+
+原子性：不可分割
+
+线程A在执行任务的时候，不能被打扰的，也不可能被分割。要么同时成功，要么同时失败。
+
+```java
+package valatile;
+
+public class Demo2 {
+    //volatile 不保证原子性
+    private volatile  static int num=0;
+    public static void add(){
+        num++;
+    }
+
+    public static void main(String[] args) {
+        //理论上num结果应该为2万
+        for (int i = 0; i < 20; i++) {
+            new Thread(()->{
+                for (int i1 = 0; i1 < 1000; i1++) {
+                        add();
+                }
+            }).start();
+            while (Thread.activeCount()>2){
+                Thread.yield();
+            }
+            System.out.println(Thread.currentThread().getName()+" "+num);
+        }
+    }
+}
+
+```
+
+
+
+如果不加Lock和synchronized,怎么保证原子性
+
+![image-20211102160102925](C:\Users\18352\AppData\Roaming\Typora\typora-user-images\image-20211102160102925.png)
+
+使用原子类，解决原子性问题
+
+```java
+package valatile;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class Demo2 {
+    //volatile 不保证原子性
+    private volatile  static  AtomicInteger num=new AtomicInteger();
+    public static void add(){
+            num.getAndIncrement();
+    }
+
+    public static void main(String[] args) {
+        //理论上num结果应该为2万
+        for (int i = 0; i < 20; i++) {
+            new Thread(()->{
+                for (int i1 = 0; i1 < 1000; i1++) {
+                        add();
+                }
+            }).start();
+            while (Thread.activeCount()>2){
+                Thread.yield();
+            }
+            System.out.println(Thread.currentThread().getName()+" "+num);
+        }
+    }
+}
+
+```
+
+这些类的底层都直接和操作系统挂钩，在内存中修改值，Unsafe类是一个很特殊的存在。
+
+##### 18、彻底玩转单例模式
+
+##### 19、深入理解CAS
+
+##### 20、原子引用
+
+##### 21、各种锁的理解
 
