@@ -3,14 +3,18 @@ user表设计
 |  字段名称   |    数据类型    | 是否为空 |       备注       |
 | :---------: | :------------: | :------: | :--------------: |
 |     id      |      int       |    N     | 用户编号，PK主键 |
-|  username   | varchar（255） |    Y     |      用户名      |
-|  password   | varchar (255)  |    Y     | 登录密码（加密） |
+|  username   | varchar（255） |    N     |      用户名      |
+|  password   | varchar (255)  |    N     | 登录密码（加密） |
 |   mobile    |  varchar(255)  |    Y     |     手机号码     |
 |   avatar    | varchar（255） |    Y     |       头像       |
 | create_time |    datetime    |    Y     |     创建时间     |
 | update_time |    datetime    |    Y     |     更新时间     |
 
 ------
+
+[TOC]
+
+---
 
 ###### 1、用户登录
 
@@ -109,6 +113,28 @@ user表设计
 
 ​	请求参数：page/count
 
+​	请求返回：
+
+```json
+{
+  "code": 200,
+  "message": "Success",
+  "data": [
+    {
+      "id": 1,
+      "password": "$2b$12$wgSrgbDnItERASJ55VAlceVmsazY7HXA3OTYW4PQG.oqWvuZR0aWi",
+      "avatar": "/static/33ff5c96c4764f9fb27a54e62632d389.jpg",
+      "update_time": "2021-12-21T15:03:27",
+      "username": "ljj",
+      "mobile": "19121900181",
+      "create_time": "2021-09-24T13:00:54"
+    }
+  ]
+}
+```
+
+
+
 
 
 ###### 6、用户token令牌
@@ -133,6 +159,15 @@ user表设计
 
 ​	请求参数：id
 
+​	请求返回：
+
+```json
+{
+  "code": 200,
+  "message": "更新成功"
+}
+```
+
 
 
 ###### 8、删除用户
@@ -145,6 +180,17 @@ user表设计
 
 ​	请求参数：id
 
+​	请求返回：
+
+```json
+{
+  "code": 200,
+  "message": "删除成功"
+}
+```
+
+
+
 
 
 ###### 9、修改用户密码
@@ -156,4 +202,15 @@ user表设计
 ​	请求路径：http://agric.lo3.cn/user/pwd
 
 ​	请求参数：id
+
+​	请求返回：
+
+```json
+{
+  "code": 200,
+  "message": "修改成功"
+}
+```
+
+
 
